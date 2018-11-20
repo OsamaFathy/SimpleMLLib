@@ -3,6 +3,14 @@ import math
 
 
 class Regresssion:
+    def __init__(self, data_set_examples, dataset_output, thetas=[]):
+        self.data_set_examples = self.__convert_to_np_array__(data_set_examples)
+        self.dataset_output = self.__convert_to_np_array__(dataset_output)
+        if len(thetas) > 0 and len(thetas) != len(data_set_examples[0]) + 1:
+            raise ValueError("Size of theta is not compatible with the number of features in the examples")
+        self.thetas = self.__convert_to_np_array__(thetas)
+        self.__prepare__()
+
     def __convert_to_np_array__(self, arr):
         ret = np.array(arr)
         return ret.astype(float)
@@ -23,12 +31,7 @@ class Regresssion:
 
 class LogisticRegression(Regresssion):
     def __init__(self, data_set_examples, dataset_output, thetas=[]):
-        self.data_set_examples = self.__convert_to_np_array__(data_set_examples)
-        self.dataset_output = self.__convert_to_np_array__(dataset_output)
-        if len(thetas) > 0 and len(thetas) != len(data_set_examples[0]) + 1:
-            raise ValueError("Size of theta is not compatible with the number of features in the examples")
-        self.thetas = self.__convert_to_np_array__(thetas)
-        self.__prepare__()
+        super().__init__(data_set_examples, dataset_output, thetas)
 
     def __calculate_cost__(self, output, correct):
         output = self.__convert_to_np_array__(output)
@@ -67,12 +70,7 @@ class LogisticRegression(Regresssion):
 
 class LinearRegression(Regresssion):
     def __init__(self, data_set_examples, dataset_output, thetas=[]):
-        self.data_set_examples = self.__convert_to_np_array__(data_set_examples)
-        self.dataset_output = self.__convert_to_np_array__(dataset_output)
-        if len(thetas) > 0 and len(thetas) != len(data_set_examples[0]) + 1:
-            raise ValueError("Size of theta is not compatible with the number of features in the examples")
-        self.thetas = self.__convert_to_np_array__(thetas)
-        self.__prepare__()
+        super().__init__(data_set_examples, dataset_output, thetas)
 
     def __calculate_cost__(self, output, correct):
         output = self.__convert_to_np_array__(output)
