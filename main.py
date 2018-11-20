@@ -28,6 +28,21 @@ class Regresssion:
             self.thetas = np.zeros([self.data_set_examples[0].size + 1])
         self.data_set_examples = self.__add_ones__(self.data_set_examples)
 
+    def __normlize__(self, data):
+        mn = np.min(data, 0)
+        mx = np.max(data, 0)
+        mean = np.mean(data, 0)
+        for i in range(data.shape[0]):
+            for j in range(1, data.shape[1]):
+                data[i][j] = (data[i][j] - mean[j]) / (mx[j] - mn[j])
+        return mn, mx, mean
+
+    def __normailze_elemnet__(self, element, mn, mx, mean):
+        return (element - mean) / (mx - mn)
+
+    def __denormalize_element__(self, element, mn, mx, mean):
+        return element * (mx - mn) + mean
+
 
 class LogisticRegression(Regresssion):
     def __init__(self, data_set_examples, dataset_output, thetas=[]):
@@ -44,25 +59,32 @@ class LogisticRegression(Regresssion):
                 sum += -math.log2(1 - x) / 2
         return sum / len(output)
 
-    def predict(self, inp, add_ones=False):
+    # todo add option to gradually decrease the learning rate
+    def __gradient_descent__(self, a, iterations):
+        self.feat_range_mn, self.feat_range_mx, self.feat_range_mean = self.__normlize__(self.data_set_examples)
+        for k in range(iterations):
+            output = self.predict(self.data_set_examples)
+            diff = output - self.dataset_output
+            for i in range(self.thetas.size):
+                self.thetas[i] -= a * np.sum(diff * self.data_set_examples[:, i])
+
+    def predict(self, inp, add_ones=False, normalize=False):
         inp = self.__convert_to_np_array__(inp)
         if inp.ndim == 1:
             inp = self.__add_dimention__(inp)
         if add_ones:
             inp = self.__add_ones__(inp)
 
+        if normalize:
+            for i in range(inp.shape[0]):
+                for j in range(1, inp.shape[1]):
+                    inp[i][j] = self.__normailze_elemnet__(inp[i][j], self.feat_range_mn[j], self.feat_range_mx[j],
+                                                           self.feat_range_mean[j])
+
         inp = np.transpose(inp)
         if inp.shape[0] != self.thetas.size:
             raise ValueError("Number of features in the input is not correct")
-        return 1 / (1 + 1/np.exp(self.thetas @ inp))
-
-    # todo add option to gradually decrease the learning rate
-    def __gradient_descent__(self, a, iterations):
-        for k in range(iterations):
-            output = self.predict(self.data_set_examples)
-            diff = output - self.dataset_output
-            for i in range(self.thetas.size):
-                self.thetas[i] -= a * np.sum(diff * self.data_set_examples[:, i])
+        return 1 / (1 + 1 / np.exp(self.thetas @ inp))
 
     def train(self, a=0.001, iterations=100000):
         self.__gradient_descent__(a, iterations)
@@ -78,37 +100,43 @@ class LinearRegression(Regresssion):
         sum = np.sum(np.square((output - correct)))
         return sum / (2. * len(output))
 
-    def predict(self, inp, add_ones=False):
-        inp = self.__convert_to_np_array__(inp)
-        if inp.ndim == 1:
-            inp = self.__add_dimention__(inp)
-        if add_ones:
-            inp = self.__add_ones__(inp)
-
-        inp = np.transpose(inp)
-        if inp.shape[0] != self.thetas.size:
-            raise ValueError("Number of features in the input is not correct")
-        return self.thetas @ inp
-
     # todo add option to gradually decrease the learning rate
     def __gradient_descent__(self, a, iterations):
+        self.feat_range_mn, self.feat_range_mx, self.feat_range_mean = self.__normlize__(self.data_set_examples)
         for k in range(iterations):
             output = self.predict(self.data_set_examples)
             diff = output - self.dataset_output
             for i in range(self.thetas.size):
                 self.thetas[i] -= a / self.thetas.size * np.sum(diff * self.data_set_examples[:, i])
 
-    def train(self, a=0.0001, iterations=10000):
+    def train(self, a=0.001, iterations=100000):
         self.__gradient_descent__(a, iterations)
+
+    def predict(self, inp, add_ones=False, normalize=False):
+        inp = self.__convert_to_np_array__(inp)
+        if inp.ndim == 1:
+            inp = self.__add_dimention__(inp)
+        if add_ones:
+            inp = self.__add_ones__(inp)
+
+        if normalize:
+            for i in range(inp.shape[0]):
+                for j in range(1, inp.shape[1]):
+                    inp[i][j] = self.__normailze_elemnet__(inp[i][j], self.feat_range_mn[j], self.feat_range_mx[j],
+                                                           self.feat_range_mean[j])
+
+        inp = np.transpose(inp)
+        if inp.shape[0] != self.thetas.size:
+            raise ValueError("Number of features in the input is not correct")
+
+        return self.thetas @ inp
 
 
 LR = LinearRegression([(1, 2), (1, 3), (2, 4), (5, 2), (10, 2)], [3, 4, 6, 7, 12], [1, 2, 3])
-LR.train()
+LR.train(0.001, 100000)
 print(LR.__calculate_cost__([1, 2], [1, 3]))
-print(LR.predict([5, 2], True))
+print(LR.predict([5, 2], True, True))
 
 LLR = LogisticRegression([(1, 2), (1, 3), (2, 4), (5, 2), (10, 2)], [0, 0, 1, 1, 1], [1, 1, 1])
-LLR.train()
-print(LLR.predict([5, 2], True))
-
-
+LLR.train(0.03, 100000)
+print(LLR.predict([5, 3], True, True))
