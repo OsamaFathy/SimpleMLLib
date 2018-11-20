@@ -48,7 +48,7 @@ class LogisticRegression(Regresssion):
     def __init__(self, data_set_examples, dataset_output, thetas=[]):
         super().__init__(data_set_examples, dataset_output, thetas)
 
-    def __calculate_cost__(self, output, correct):
+    def __calculate_cost__(self, output, correct, lmbda):
         output = self.__convert_to_np_array__(output)
         correct = self.__convert_to_np_array__(correct)
         sum = 0
@@ -57,16 +57,18 @@ class LogisticRegression(Regresssion):
                 sum += -math.log2(x) / 2
             else:
                 sum += -math.log2(1 - x) / 2
+        sum += lmbda * np.sum(self.thetas * self.thetas)
         return sum / len(output)
 
     # todo add option to gradually decrease the learning rate
-    def __gradient_descent__(self, a, iterations):
+    def __gradient_descent__(self, a, iterations, lmbda):
         self.feat_range_mn, self.feat_range_mx, self.feat_range_mean = self.__normlize__(self.data_set_examples)
         for k in range(iterations):
             output = self.predict(self.data_set_examples)
             diff = output - self.dataset_output
             for i in range(self.thetas.size):
-                self.thetas[i] -= a * np.sum(diff * self.data_set_examples[:, i])
+                self.thetas[i] -= a / self.thetas.size * (
+                            np.sum(diff * self.data_set_examples[:, i]) + lmbda * np.sum(self.thetas))
 
     def predict(self, inp, add_ones=False, normalize=False):
         inp = self.__convert_to_np_array__(inp)
@@ -87,30 +89,32 @@ class LogisticRegression(Regresssion):
         return 1 / (1 + 1 / np.exp(self.thetas @ inp))
 
     def train(self, a=0.001, iterations=100000):
-        self.__gradient_descent__(a, iterations)
+        self.__gradient_descent__(a, iterations, 0.001)
 
 
 class LinearRegression(Regresssion):
     def __init__(self, data_set_examples, dataset_output, thetas=[]):
         super().__init__(data_set_examples, dataset_output, thetas)
 
-    def __calculate_cost__(self, output, correct):
+    def __calculate_cost__(self, output, correct, lmbda):
         output = self.__convert_to_np_array__(output)
         correct = self.__convert_to_np_array__(correct)
         sum = np.sum(np.square((output - correct)))
+        sum += lmbda * np.sum(self.thetas * self.thetas)
         return sum / (2. * len(output))
 
     # todo add option to gradually decrease the learning rate
-    def __gradient_descent__(self, a, iterations):
+    def __gradient_descent__(self, a, iterations, lmbda):
         self.feat_range_mn, self.feat_range_mx, self.feat_range_mean = self.__normlize__(self.data_set_examples)
         for k in range(iterations):
             output = self.predict(self.data_set_examples)
             diff = output - self.dataset_output
             for i in range(self.thetas.size):
-                self.thetas[i] -= a / self.thetas.size * np.sum(diff * self.data_set_examples[:, i])
+                self.thetas[i] -= a / self.thetas.size * (
+                        np.sum(diff * self.data_set_examples[:, i]) + lmbda * np.sum(self.thetas))
 
     def train(self, a=0.001, iterations=100000):
-        self.__gradient_descent__(a, iterations)
+        self.__gradient_descent__(a, iterations, 0.001)
 
     def predict(self, inp, add_ones=False, normalize=False):
         inp = self.__convert_to_np_array__(inp)
@@ -134,7 +138,6 @@ class LinearRegression(Regresssion):
 
 LR = LinearRegression([(1, 2), (1, 3), (2, 4), (5, 2), (10, 2)], [3, 4, 6, 7, 12], [1, 2, 3])
 LR.train(0.001, 100000)
-print(LR.__calculate_cost__([1, 2], [1, 3]))
 print(LR.predict([5, 2], True, True))
 
 LLR = LogisticRegression([(1, 2), (1, 3), (2, 4), (5, 2), (10, 2)], [0, 0, 1, 1, 1], [1, 1, 1])
